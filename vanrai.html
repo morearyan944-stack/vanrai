@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vanrai — चव निसर्गाची</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Noto+Sans+Devanagari:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --saffron: #E8541A;
+    --forest: #1A4D2E;
+    --gold: #C8922A;
+    --cream: #FDF6EC;
+    --dark: #0E1A12;
+    --rust: #8B2500;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--dark);
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  .cursor {
+    position: fixed; width: 12px; height: 12px;
+    background: var(--saffron); border-radius: 50%;
+    pointer-events: none; z-index: 9999;
+    transform: translate(-50%,-50%);
+    transition: transform 0.1s, width 0.3s, height 0.3s, background 0.3s;
+    mix-blend-mode: normal;
+  }
+  .cursor-ring {
+    position: fixed; width: 40px; height: 40px;
+    border: 1.5px solid var(--gold); border-radius: 50%;
+    pointer-events: none; z-index: 9998;
+    transform: translate(-50%,-50%);
+    transition: transform 0.15s ease, width 0.3s, height 0.3s, opacity 0.3s;
+  }
+
+  /* ─── HERO ─── */
+  #hero {
+    position: relative; height: 100vh; display: flex;
+    align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 30% 60%, #3a1a0a 0%, var(--dark) 55%),
+                radial-gradient(ellipse at 80% 20%, #0d2b1a 0%, transparent 50%);
+  }
+
+  /* 3D floating leaves */
+  .leaf-canvas {
+    position: absolute; inset: 0; pointer-events: none;
+  }
+
+  /* Grain overlay */
+  .grain {
+    position: fixed; inset: 0; pointer-events: none; z-index: 9000; opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  }
+
+  .hero-content {
+    position: relative; z-index: 10; text-align: center;
+    perspective: 1000px;
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--gold); border: 1px solid rgba(200,146,42,0.4);
+    padding: 6px 20px; border-radius: 2px; margin-bottom: 28px;
+    animation: fadeDown 0.8s ease both;
+  }
+
+  .hero-name-devanagari {
+    font-family: 'Noto Sans Devanagari', sans-serif;
+    font-size: clamp(5rem, 15vw, 12rem); font-weight: 700;
+    line-height: 0.9;
+    background: linear-gradient(135deg, #fff 0%, var(--gold) 40%, var(--saffron) 70%, #fff 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 60px rgba(232,84,26,0.35));
+    animation: heroReveal 1.2s cubic-bezier(0.16,1,0.3,1) 0.2s both;
+    transform-style: preserve-3d;
+  }
+
+  .hero-tagline {
+    font-family: 'Playfair Display', serif; font-style: italic;
+    font-size: clamp(0.9rem, 2vw, 1.2rem); color: rgba(253,246,236,0.65);
+    margin-top: 16px; letter-spacing: 0.08em;
+    animation: fadeUp 0.9s ease 0.9s both;
+  }
+
+  .hero-scroll {
+    position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    animation: fadeUp 1s ease 1.4s both;
+  }
+  .hero-scroll span { font-size: 0.65rem; letter-spacing: 0.25em; color: var(--gold); text-transform: uppercase; }
+  .scroll-line {
+    width: 1px; height: 60px;
+    background: linear-gradient(to bottom, var(--gold), transparent);
+    animation: scrollPulse 2s ease infinite;
+  }
+
+  /* ─── FLOATING 3D SPICE ORBS ─── */
+  .orbs { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .orb {
+    position: absolute; border-radius: 50%;
+    filter: blur(1px);
+    animation: floatOrb linear infinite;
+  }
+  .orb-1 { width:200px; height:200px; background: radial-gradient(circle at 35% 35%, rgba(232,84,26,0.3), transparent 70%); top:10%; left:5%; animation-duration:18s; animation-delay:-3s; }
+  .orb-2 { width:300px; height:300px; background: radial-gradient(circle at 35% 35%, rgba(26,77,46,0.4), transparent 70%); top:50%; right:8%; animation-duration:25s; animation-delay:-8s; }
+  .orb-3 { width:150px; height:150px; background: radial-gradient(circle at 35% 35%, rgba(200,146,42,0.3), transparent 70%); bottom:20%; left:20%; animation-duration:14s; animation-delay:-5s; }
+
+  /* ─── MARQUEE STRIP ─── */
+  .marquee-strip {
+    background: var(--saffron); padding: 14px 0; overflow: hidden;
+    position: relative; z-index: 20;
+  }
+  .marquee-inner { display: flex; gap: 0; animation: marquee 22s linear infinite; white-space: nowrap; }
+  .marquee-inner span { font-size: 0.75rem; letter-spacing: 0.25em; text-transform: uppercase; font-weight: 500; color: #fff; padding: 0 40px; }
+  .marquee-inner .dot { color: rgba(255,255,255,0.5); }
+
+  /* ─── SECTION COMMONS ─── */
+  section { padding: 120px 40px; }
+  .section-label {
+    font-size: 0.65rem; letter-spacing: 0.4em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 16px;
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif; font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 900; line-height: 1.05;
+  }
+
+  /* ─── ABOUT 3D CARD ─── */
+  #about {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
+    align-items: center; max-width: 1200px; margin: 0 auto;
+  }
+
+  .about-visual {
+    perspective: 800px;
+  }
+  .about-card-3d {
+    position: relative; height: 520px;
+    transform-style: preserve-3d;
+    animation: float3d 6s ease-in-out infinite;
+  }
+  .card-face {
+    position: absolute; inset: 0; border-radius: 24px; overflow: hidden;
+    background: linear-gradient(135deg, rgba(26,77,46,0.8) 0%, rgba(14,26,18,0.95) 100%);
+    border: 1px solid rgba(200,146,42,0.2);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.07);
+    display: flex; flex-direction: column; justify-content: flex-end; padding: 40px;
+  }
+  .card-plate-img {
+    position: absolute; top: -30px; right: -30px; width: 240px; height: 240px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, var(--saffron), var(--gold), var(--forest), var(--saffron));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 6rem;
+    box-shadow: 0 20px 60px rgba(232,84,26,0.4), 0 0 0 2px rgba(200,146,42,0.3);
+    animation: spinSlow 20s linear infinite;
+  }
+  .card-stat { margin-top: 12px; }
+  .card-stat-num { font-family: 'Playfair Display', serif; font-size: 3.5rem; font-weight: 900; color: var(--saffron); line-height: 1; }
+  .card-stat-label { font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(253,246,236,0.5); }
+
+  .about-text .section-title { margin-bottom: 28px; }
+  .about-text p { color: rgba(253,246,236,0.65); line-height: 1.8; font-size: 1rem; font-weight: 300; }
+  .about-text p + p { margin-top: 16px; }
+
+  .cta-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    margin-top: 36px; padding: 14px 32px;
+    background: transparent; border: 1px solid var(--saffron);
+    color: var(--saffron); font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
+    border-radius: 3px; cursor: none; text-decoration: none;
+    position: relative; overflow: hidden; transition: color 0.4s;
+  }
+  .cta-btn::before {
+    content: ''; position: absolute; inset: 0;
+    background: var(--saffron); transform: scaleX(0); transform-origin: left;
+    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+  }
+  .cta-btn:hover::before { transform: scaleX(1); }
+  .cta-btn:hover { color: #fff; }
+  .cta-btn span { position: relative; }
+
+  /* ─── MENU ─── */
+  #menu { max-width: 1100px; margin: 0 auto; }
+  .menu-header { text-align: center; margin-bottom: 80px; }
+
+  .menu-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2px;
+  }
+
+  .menu-item {
+    position: relative; padding: 32px 36px;
+    background: rgba(26,77,46,0.06);
+    border: 1px solid rgba(200,146,42,0.08);
+    transition: background 0.4s, transform 0.4s, box-shadow 0.4s;
+    overflow: hidden; cursor: none;
+    transform-style: preserve-3d;
+  }
+  .menu-item::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(232,84,26,0.06) 0%, rgba(26,77,46,0.1) 100%);
+    opacity: 0; transition: opacity 0.4s;
+  }
+  .menu-item:hover { background: rgba(26,77,46,0.15); transform: translateZ(8px) scale(1.01); box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+  .menu-item:hover::before { opacity: 1; }
+
+  .menu-item-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+  .menu-item-name { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 700; line-height: 1.3; }
+  .menu-item-sub { font-size: 0.7rem; color: var(--gold); font-style: italic; margin-top: 2px; }
+  .menu-item-price {
+    font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 900;
+    color: var(--saffron); white-space: nowrap; flex-shrink: 0;
+  }
+  .menu-item-price small { font-size: 0.7rem; font-weight: 300; color: rgba(253,246,236,0.4); font-family: 'DM Sans',sans-serif; }
+
+  .menu-item-bar {
+    height: 1px; margin-top: 20px;
+    background: linear-gradient(to right, var(--gold), transparent);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+  }
+  .menu-item:hover .menu-item-bar { transform: scaleX(1); }
+
+  /* SPECIAL items */
+  .menu-item.special {
+    background: linear-gradient(135deg, rgba(139,37,0,0.2) 0%, rgba(26,77,46,0.15) 100%);
+    border-color: rgba(232,84,26,0.25);
+  }
+  .special-badge {
+    display: inline-block; font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase;
+    background: var(--saffron); color: #fff; padding: 3px 8px; border-radius: 1px;
+    margin-bottom: 8px;
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    padding: 60px 40px; border-top: 1px solid rgba(200,146,42,0.1);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 24px;
+  }
+  .footer-logo { font-family: 'Noto Sans Devanagari', sans-serif; font-size: 2rem; font-weight: 700; color: var(--gold); }
+  .footer-note { font-size: 0.75rem; color: rgba(253,246,236,0.35); letter-spacing: 0.1em; }
+  .footer-info { font-size: 0.8rem; color: rgba(253,246,236,0.5); text-align: right; line-height: 1.8; }
+
+  /* ─── 3D SCENE (Three.js via CDN) ─── */
+  #three-canvas {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0; opacity: 0.55;
+  }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes heroReveal {
+    from { opacity: 0; transform: translateY(40px) rotateX(20deg); }
+    to   { opacity: 1; transform: translateY(0) rotateX(0); }
+  }
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-16px); } to { opacity:1; transform:none; } }
+  @keyframes fadeUp   { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+  @keyframes scrollPulse { 0%,100%{opacity:1;transform:scaleY(1)} 50%{opacity:0.3;transform:scaleY(0.5)} }
+  @keyframes floatOrb {
+    0%   { transform: translate(0,0) scale(1); }
+    33%  { transform: translate(30px,-40px) scale(1.05); }
+    66%  { transform: translate(-20px,20px) scale(0.95); }
+    100% { transform: translate(0,0) scale(1); }
+  }
+  @keyframes float3d {
+    0%,100% { transform: rotateX(2deg) rotateY(-5deg) translateY(0); }
+    50%     { transform: rotateX(-2deg) rotateY(5deg) translateY(-16px); }
+  }
+  @keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* ─── REVEAL ON SCROLL ─── */
+  .reveal { opacity: 0; transform: translateY(40px); transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16,1,0.3,1); }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  @media (max-width: 768px) {
+    #about { grid-template-columns: 1fr; }
+    .about-visual { display: none; }
+    .footer-info { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<canvas id="three-canvas"></canvas>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="hero-content">
+    <div class="badge">Nashik's Finest Maharashtrian Kitchen</div>
+    <h1 class="hero-name-devanagari">वनराई</h1>
+    <p class="hero-tagline">चव निसर्गाची, ओढ आपुलकीची</p>
+  </div>
+  <div class="hero-scroll">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-strip">
+  <div class="marquee-inner">
+    <span>Vanrai Special Misal</span><span class="dot">✦</span>
+    <span>Shev Rassa</span><span class="dot">✦</span>
+    <span>Vada Rassa</span><span class="dot">✦</span>
+    <span>Kanda Bhaji</span><span class="dot">✦</span>
+    <span>Masala Matki</span><span class="dot">✦</span>
+    <span>Solkadi</span><span class="dot">✦</span>
+    <span>Dahi Vati</span><span class="dot">✦</span>
+    <!-- duplicate for seamless loop -->
+    <span>Vanrai Special Misal</span><span class="dot">✦</span>
+    <span>Shev Rassa</span><span class="dot">✦</span>
+    <span>Vada Rassa</span><span class="dot">✦</span>
+    <span>Kanda Bhaji</span><span class="dot">✦</span>
+    <span>Masala Matki</span><span class="dot">✦</span>
+    <span>Solkadi</span><span class="dot">✦</span>
+    <span>Dahi Vati</span><span class="dot">✦</span>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<section style="padding:120px 40px;">
+  <div id="about">
+    <div class="about-visual reveal">
+      <div class="about-card-3d">
+        <div class="card-face">
+          <div class="card-plate-img">🍽️</div>
+          <div class="card-stat">
+            <div class="card-stat-num">100%</div>
+            <div class="card-stat-label">Pure Veg · Refined Oil · Fresh Daily</div>
+          </div>
+          <div class="card-stat" style="margin-top:24px;">
+            <div class="card-stat-num" style="font-size:2rem;">15+</div>
+            <div class="card-stat-label">Authentic Dishes on the Menu</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="about-text reveal" style="transition-delay:0.15s;">
+      <div class="section-label">Our Story</div>
+      <h2 class="section-title">Where Nature<br>Meets <em style="color:var(--saffron)">Tradition</em></h2>
+      <p>Vanrai brings the soulful flavours of Maharashtra to your plate. Rooted in the spirit of nature and the warmth of community, every dish is a love letter to our culinary heritage.</p>
+      <p>From the fiery depth of our Hirvi Mug Misal to the tangy cool of Solkadi, each bite carries the unmistakable taste of authenticity. All items are prepared fresh, cooked in refined oil, with no compromises.</p>
+      <a href="#menu" class="cta-btn"><span>Explore the Menu</span><span>→</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- MENU -->
+<section id="menu" style="padding:120px 40px;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="menu-header reveal">
+      <div class="section-label">— Menu Card —</div>
+      <h2 class="section-title">Every Dish,<br>A <em style="color:var(--gold)">Story</em></h2>
+    </div>
+
+    <div class="menu-grid">
+      <!-- Specials -->
+      <div class="menu-item special reveal">
+        <div class="special-badge">Signature</div>
+        <div class="menu-item-top">
+          <div>
+            <div class="menu-item-name">Vanrai Special Misal</div>
+            <div class="menu-item-sub">Hirvi Mug Misal</div>
+          </div>
+          <div class="menu-item-price">₹110<small>.00</small></div>
+        </div>
+        <div class="menu-item-bar"></div>
+      </div>
+
+      <div class="menu-item special reveal" style="transition-delay:0.05s;">
+        <div class="special-badge">Signature</div>
+        <div class="menu-item-top">
+          <div>
+            <div class="menu-item-name">Vanrai Special Misal</div>
+            <div class="menu-item-sub">Lal Misal</div>
+          </div>
+          <div class="menu-item-price">₹110<small>.00</small></div>
+        </div>
+        <div class="menu-item-bar"></div>
+      </div>
+
+      <!-- Regular Items -->
+      <div class="menu-item reveal" style="transition-delay:0.1s;">
+        <div class="menu-item-top">
+          <div class="menu-item-name">Shev Rassa</div>
+          <div class="menu-item-price">₹100<small>.00</small></div>
+        </div>
+        <div class="menu-item-bar"></div>
+      </div>
+
+      <div class="menu-item reveal" style="transition-delay:0.12s;">
+        <div class="menu-item-top">
+          <div class="menu-item-name">Vada Rassa</div>
+          <div class="menu-item-price">₹110<small>.00</small></div>
+        </div>
+        <div class="menu-item-bar"></div>
+      </div>
+
+      <div class="menu-item reveal" style="transition-delay:0.14s;">
+        <div class="menu-item-top">
+          <div class="menu-item-name">Dahi Vati</div>
+          <div class="menu-item-price">₹50<small>.00</small></div>
+        </div>
+        <div class="menu-item-bar"></div>
+      </div>
+
+      <div class="menu-item reveal" style="transition-delay:0.16s;">
+        <div class="menu-item-top">
+          <div class="menu-item-name">Kanda Bhaji</div>
+          <div class="menu-item-price">₹50<small>.00</small></div>
+        </div>
+        <div class="menu-item-bar"></div>
+      </div>
+
+      <div class="menu-item reveal" style="transition-delay:0.18s;">
+        <div class="menu-item-top">
+          <div class="menu-item-name">Batata Bhaji</div>
+          <div class="menu-item-price">₹50<small>.00</small></div>
+        </div>
+        <div class="menu-item-bar"></div>
+      </div>
+
+      <div class="menu-item reveal" style="transition-delay:0.2s;">
+        <div class="menu-item-top">
+          <div class="menu-item-name">Masala Matki</div>
+          <div class="menu-item-price">₹80<small>.00</small></div>
+        </div>
+        <div class="menu-item-bar"></div>
+      </div>
+
+      <div class="menu-item reveal" style="transition-delay:0.22s;">
+        <div class="menu-item-top">
+          <div class="menu-item-name">Taak / Chaas</div>
+          <div class="menu-item-price">₹40<small>.00</small></div>
+        </div>
+        <div class="menu-item-bar"></div>
+      </div>
+
+      <div class="menu-item reveal" style="transition-delay:0.24s;">
+        <div class="menu-item-top">
+          <div class="menu-item-name">Solkadi</div>
+          <div class="menu-item-price">₹50<small>.00</small></div>
+        </div>
+        <div class="menu-item-bar"></div>
+      </div>
+
+      <div class="menu-item reveal" style="transition-delay:0.26s;">
+        <div class="menu-item-top">
+          <div class="menu-item-name">Mineral Water</div>
+          <div class="menu-item-price">₹20<small>.00</small></div>
+        </div>
+        <div class="menu-item-bar"></div>
+      </div>
+
+      <div class="menu-item reveal" style="transition-delay:0.28s;">
+        <div class="menu-item-top">
+          <div class="menu-item-name">Cold Drink</div>
+          <div class="menu-item-price">₹20<small>.00</small></div>
+        </div>
+        <div class="menu-item-bar"></div>
+      </div>
+    </div>
+
+    <!-- Extras row -->
+    <div style="display:flex;gap:2px;margin-top:2px;" class="reveal" style="transition-delay:0.3s;">
+      <div class="menu-item" style="flex:1;">
+        <div class="menu-item-top">
+          <div class="menu-item-name" style="font-size:0.95rem;">Extra Pav</div>
+          <div class="menu-item-price" style="font-size:1.1rem;">₹5<small>.00</small></div>
+        </div>
+        <div class="menu-item-bar"></div>
+      </div>
+      <div class="menu-item" style="flex:1;">
+        <div class="menu-item-top">
+          <div class="menu-item-name" style="font-size:0.95rem;">Extra Shev</div>
+          <div class="menu-item-price" style="font-size:1.1rem;">₹25<small>.00</small></div>
+        </div>
+        <div class="menu-item-bar"></div>
+      </div>
+      <div class="menu-item" style="flex:1;">
+        <div class="menu-item-top">
+          <div class="menu-item-name" style="font-size:0.95rem;">Extra Papad</div>
+          <div class="menu-item-price" style="font-size:1.1rem;">₹10<small>.00</small></div>
+        </div>
+        <div class="menu-item-bar"></div>
+      </div>
+    </div>
+
+    <p class="reveal" style="text-align:center;margin-top:48px;font-size:0.75rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(253,246,236,0.3);">
+      ✦ All items are cooked in refined oil ✦
+    </p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="footer-logo">वनराई</div>
+    <div class="footer-note" style="margin-top:8px;">चव निसर्गाची, ओढ आपुलकीची</div>
+  </div>
+  <div class="footer-info">
+    Pure Vegetarian · Freshly Made<br>
+    <span style="color:var(--gold)">Nashik, Maharashtra</span>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ─── CURSOR ───
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursorRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; cursor.style.left=mx+'px'; cursor.style.top=my+'px'; });
+(function animRing(){
+  rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12;
+  ring.style.left=rx+'px'; ring.style.top=ry+'px';
+  requestAnimationFrame(animRing);
+})();
+document.querySelectorAll('a,.cta-btn,.menu-item').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{ cursor.style.transform='translate(-50%,-50%) scale(2.5)'; cursor.style.background='var(--gold)'; ring.style.opacity='0'; });
+  el.addEventListener('mouseleave',()=>{ cursor.style.transform='translate(-50%,-50%) scale(1)'; cursor.style.background='var(--saffron)'; ring.style.opacity='1'; });
+});
+
+// ─── SCROLL REVEAL ───
+const reveals = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target); } });
+}, { threshold: 0.12 });
+reveals.forEach(r => io.observe(r));
+
+// ─── THREE.JS 3D PARTICLES ───
+const canvas = document.getElementById('three-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.z = 30;
+
+// Floating geometric particles (inspired by spice shapes)
+const particles = [];
+const geoms = [
+  new THREE.OctahedronGeometry(0.3, 0),
+  new THREE.TetrahedronGeometry(0.4, 0),
+  new THREE.IcosahedronGeometry(0.25, 0),
+];
+const mats = [
+  new THREE.MeshBasicMaterial({ color: 0xE8541A, wireframe: true, transparent:true, opacity:0.5 }),
+  new THREE.MeshBasicMaterial({ color: 0xC8922A, wireframe: true, transparent:true, opacity:0.4 }),
+  new THREE.MeshBasicMaterial({ color: 0x1A4D2E, wireframe: true, transparent:true, opacity:0.35 }),
+];
+
+for(let i=0; i<80; i++){
+  const g = geoms[i%3];
+  const m = mats[i%3];
+  const mesh = new THREE.Mesh(g, m);
+  mesh.position.set((Math.random()-0.5)*60, (Math.random()-0.5)*40, (Math.random()-0.5)*30);
+  mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+  mesh.userData = {
+    vx:(Math.random()-0.5)*0.005,
+    vy:(Math.random()-0.5)*0.005,
+    vz:(Math.random()-0.5)*0.003,
+    rx:Math.random()*0.005,
+    ry:Math.random()*0.005,
+  };
+  scene.add(mesh);
+  particles.push(mesh);
+}
+
+// Large central slow-rotating octahedron
+const bigGeo = new THREE.OctahedronGeometry(8, 1);
+const bigMat = new THREE.MeshBasicMaterial({ color: 0x1A4D2E, wireframe:true, transparent:true, opacity:0.06 });
+const bigMesh = new THREE.Mesh(bigGeo, bigMat);
+scene.add(bigMesh);
+
+let mouseX3d=0, mouseY3d=0;
+document.addEventListener('mousemove', e => {
+  mouseX3d = (e.clientX/window.innerWidth - 0.5)*2;
+  mouseY3d = -(e.clientY/window.innerHeight - 0.5)*2;
+});
+
+let scrollY3d = 0;
+window.addEventListener('scroll', () => { scrollY3d = window.scrollY; });
+
+(function animate(){
+  requestAnimationFrame(animate);
+  const t = Date.now()*0.001;
+
+  bigMesh.rotation.x = t*0.05 + mouseY3d*0.1;
+  bigMesh.rotation.y = t*0.08 + mouseX3d*0.1;
+
+  particles.forEach(p => {
+    p.position.x += p.userData.vx;
+    p.position.y += p.userData.vy;
+    p.position.z += p.userData.vz;
+    p.rotation.x += p.userData.rx;
+    p.rotation.y += p.userData.ry;
+    if(Math.abs(p.position.x)>32) p.userData.vx*=-1;
+    if(Math.abs(p.position.y)>22) p.userData.vy*=-1;
+    if(Math.abs(p.position.z)>18) p.userData.vz*=-1;
+  });
+
+  camera.position.x += (mouseX3d*3 - camera.position.x)*0.03;
+  camera.position.y += (mouseY3d*2 - camera.position.y)*0.03;
+  camera.position.y -= scrollY3d*0.008;
+  camera.lookAt(0, -scrollY3d*0.008, 0);
+
+  renderer.render(scene, camera);
+})();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
